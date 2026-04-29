@@ -137,22 +137,65 @@ All notes routes require a `Bearer` token.
 
 ## Deployment
 
-### Frontend
+### Recommended Setup
 
-- Build with `npm run build` inside `/client`
-- Deploy the generated `dist` folder to Netlify, Vercel, Cloudflare Pages, or similar
-- Set `VITE_API_URL` to your deployed backend API base URL, for example `https://api.example.com/api`
+- Frontend: Vercel
+- Backend API: Render
+- Database: MongoDB Atlas
 
-### Backend
+This split works well for a Vite frontend plus an Express API, and the repo now includes:
 
-- Deploy `/server` to Render, Railway, Fly.io, or another Node hosting provider
-- Set `MONGO_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT`, and `CLIENT_URL`
-- Point `CLIENT_URL` to the deployed frontend origin so CORS is restricted correctly
+- [client/vercel.json](/Users/harshtiwari/Downloads/crud/client/vercel.json) for Vercel SPA routing
+- [render.yaml](/Users/harshtiwari/Downloads/crud/render.yaml) for a Render backend service blueprint
+
+### Backend on Render
+
+1. Go to [Render Dashboard](https://dashboard.render.com/) and create a new Blueprint or Web Service from your GitHub repo.
+2. If you use the included `render.yaml`, Render will detect the backend service automatically.
+3. Confirm these settings:
+   - Root directory: `server`
+   - Build command: `npm install`
+   - Start command: `npm start`
+   - Health check path: `/api/health`
+4. Set or confirm these environment variables:
+   - `MONGO_URI` = your MongoDB Atlas connection string
+   - `CLIENT_URL` = your deployed frontend URL, for example `https://notenest.vercel.app`
+   - `JWT_SECRET` = generated automatically if you use the blueprint
+   - `JWT_EXPIRES_IN` = `7d`
+5. Deploy the service and copy the backend URL, for example `https://notenest-api.onrender.com`
+
+### Frontend on Vercel
+
+1. Go to [Vercel Dashboard](https://vercel.com/new) and import the same GitHub repository.
+2. Set the project root directory to `client`.
+3. Vercel should detect Vite automatically.
+4. Add this environment variable before deploying:
+   - `VITE_API_URL` = `https://your-render-backend.onrender.com/api`
+5. Deploy the frontend.
+
+The included `vercel.json` adds a rewrite so React Router routes such as `/login` and `/signup` work correctly in production.
+
+### Final Wiring
+
+After both deploys finish:
+
+1. Copy your Vercel frontend URL.
+2. Go back to Render and set `CLIENT_URL` to that exact frontend origin.
+3. Trigger a redeploy on Render so CORS uses the final live URL.
+4. Test:
+   - `https://your-backend-url.onrender.com/api/health`
+   - `https://your-frontend-url.vercel.app/login`
 
 ### MongoDB
 
 - Use MongoDB Atlas or a managed MongoDB instance for production
 - Update `MONGO_URI` with your cluster connection string
+
+### Notes
+
+- Render free web services can sleep after inactivity, so the first API request may be slower.
+- Vercel and Render use different live URLs, so `CLIENT_URL` and `VITE_API_URL` must point to each other correctly.
+- Do not put secrets in the frontend environment. Only `VITE_API_URL` belongs in Vercel.
 
 ## Production Notes
 
